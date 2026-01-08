@@ -1,8 +1,8 @@
 # sndcpy
-> Personal use minimum demo, implementation was inspired by [sndcpy](https://github.com/rom1v/sndcpy).
+> Minimum demo primarily adapt to my devices, implementation was inspired by [sndcpy](https://github.com/rom1v/sndcpy).
 
 ## Features
-- Real-time transmission of Android device audio to computer
+- Real-time transmission(<100ms for me) of Android device audio to computer
 - Capture system audio using MediaProjection API
 - Transmit audio data via local Socket
 - Foreground service ensures stable operation
