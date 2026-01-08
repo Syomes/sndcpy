@@ -47,3 +47,5 @@ Out of Box: Run script(`sndcpy` for GNU/Linux and MacOS and `sndcpy.bat` for Win
 - App runs as foreground service, notification will be shown in status bar
 - Audio data is transmitted via local Socket, requires companion computer program
 - Only supports system audio capture, does not include microphone input
+
+## [License](./LICENSE)
