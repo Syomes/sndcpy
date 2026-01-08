@@ -1,17 +1,17 @@
 package com.syome.sndcpy
 
 import android.Manifest
+import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.projection.MediaProjectionManager
 import android.net.Uri
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.syome.sndcpy.service.AudioForwardService
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : Activity() {
     private val REQUEST_CODE = 1001
     private val PERMISSION_REQUEST_CODE = 1002
     private lateinit var projectionManager: MediaProjectionManager
@@ -56,6 +56,7 @@ class MainActivity : AppCompatActivity() {
             }
             startForegroundService(serviceIntent)
         }
+        finish()
     }
     
     override fun onRequestPermissionsResult(

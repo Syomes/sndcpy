@@ -38,6 +38,10 @@
 nc localhost 28200 | aplay -f S16_LE -r 44100 -c 2 --buffer-size=1024 --period-size=256
 ```
 
+---
+
+Out of Box: Run script(`sndcpy` for GNU/Linux and MacOS and `sndcpy.bat` for Windows) in the release directory.
+
 ## Notes
 - First run requires screen recording permission authorization
 - App runs as foreground service, notification will be shown in status bar

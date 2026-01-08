@@ -8,7 +8,7 @@ set -e  # Exit immediately if a command exits with a non-zero status
 ADB="${ADB:-adb}"
 SERIAL=""
 APK_NAME="sndcpy.apk"
-TAG="sndcpy - AudioForwardService"
+TAG="sndcpy-AudioForwardService"
 
 # Colors for output
 RED='\033[0;31m'
@@ -101,6 +101,7 @@ adb_with_serial shell appops set com.syome.sndcpy PROJECT_MEDIA allow || {
 
 print "Starting sndcpy app..."
 # Start the main activity which will request media projection permission
+adb_with_serial shell am force-stop com.syome.sndcpy
 adb_with_serial shell am start -n com.syome.sndcpy/.MainActivity -a android.intent.action.MAIN -c android.intent.category.LAUNCHER
 
 print "Setting up port forwarding..."
@@ -116,7 +117,7 @@ print ""
 print "Waiting for app"
 
 while true; do
-    logs=$(adb logcat -d -s "$TAG")
+    logs=$(adb logcat -d -b all -s "$TAG")
 
     # Check if log contained(app launched)
     if echo "$logs" | grep -q "Waiting for client to connect..."; then
@@ -126,6 +127,8 @@ while true; do
 
     sleep 1
 done
+
+sleep 1
 
 print "To stop, press Ctrl+C"
 print ""
