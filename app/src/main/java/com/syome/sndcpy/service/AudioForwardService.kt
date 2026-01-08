@@ -63,7 +63,7 @@ class AudioForwardService : Service() {
         Thread {
             try {
                 serverSocket = LocalServerSocket("sndcpy")
-                Log.d("AudioForwardService", "LocalServerSocket created")
+                Log.d("sndcpy - AudioForwardService", "LocalServerSocket created")
                 
                 // Setup AudioPlaybackCapture
                 val config = AudioPlaybackCaptureConfiguration.Builder(projection!!)

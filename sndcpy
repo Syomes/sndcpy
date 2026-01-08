@@ -1,0 +1,151 @@
+#!/bin/bash
+
+# sndcpy - Audio forwarding from Android to PC via ADB
+# Enhanced version with automatic permission granting
+
+set -e  # Exit immediately if a command exits with a non-zero status
+
+ADB="${ADB:-adb}"
+SERIAL=""
+APK_NAME="sndcpy.apk"
+TAG="sndcpy - AudioForwardService"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+function print() {
+    echo -e "$1"
+}
+
+function print_error() {
+    echo -e "${RED}ERROR: $1${NC}" >&2
+}
+
+function print_success() {
+    echo -e "${GREEN}SUCCESS: $1${NC}"
+}
+
+function print_warning() {
+    echo -e "${YELLOW}WARNING: $1${NC}"
+}
+
+function usage() {
+    echo "sndcpy - Audio forwarding from Android to PC via ADB"
+    echo ""
+    echo "Usage: sndcpy [options]"
+    echo "Options:"
+    echo "  -s, --serial SERIAL   Use specific device"
+    echo "  -h, --help           Show this help message"
+    echo ""
+    echo "Example: sndcpy"
+    echo "         sndcpy -s emulator-5554"
+}
+
+# Parse command line options
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -s|--serial)
+            SERIAL="$2"
+            shift 2
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            print_error "Unknown option: $1"
+            usage
+            exit 1
+            ;;
+    esac
+done
+
+# Function to run adb with optional serial
+function adb_with_serial() {
+    if [ -n "$SERIAL" ]; then
+        $ADB -s "$SERIAL" "$@"
+    else
+        $ADB "$@"
+    fi
+}
+
+print "Checking ADB connection..."
+if ! adb_with_serial devices | grep -q "device$"; then
+    if [ -n "$SERIAL" ]; then
+        print_error "Device $SERIAL is not connected or not in device state"
+    else
+        print_error "No device connected or not in device state"
+    fi
+    exit 1
+fi
+
+print "Checking if sndcpy app is already installed..."
+if adb_with_serial shell pm list packages | grep -q "com.syome.sndcpy"; then
+    print_success "sndcpy app already installed, skipping installation."
+else
+    print "Installing sndcpy app..."
+    adb_with_serial install -r "$APK_NAME" || {
+        print_error "Failed to install $APK_NAME"
+        exit 1
+    }
+fi
+
+print "Granting audio projection permission..."
+# Grant the PROJECT_MEDIA permission to allow audio capture without popup
+adb_with_serial shell appops set com.syome.sndcpy PROJECT_MEDIA allow || {
+    print_warning "Could not grant PROJECT_MEDIA permission - this may cause a popup on newer Android versions"
+}
+
+print "Starting sndcpy app..."
+# Start the main activity which will request media projection permission
+adb_with_serial shell am start -n com.syome.sndcpy/.MainActivity -a android.intent.action.MAIN -c android.intent.category.LAUNCHER
+
+print "Setting up port forwarding..."
+# Forward the local socket to TCP port for easier access
+adb_with_serial forward tcp:28200 localabstract:sndcpy
+
+print "Starting audio playback..."
+print "Please accept the screen recording permission on your device when prompted."
+print "After accepting, the audio will be forwarded to your PC."
+print ""
+
+# Wait a bit for the app to be ready before starting nc
+print "Waiting for app"
+
+while true; do
+    logs=$(adb logcat -d -s "$TAG")
+
+    # Check if log contained(app launched)
+    if echo "$logs" | grep -q "Waiting for client to connect..."; then
+        echo "App Launched"
+        break
+    fi
+
+    sleep 1
+done
+
+print "To stop, press Ctrl+C"
+print ""
+
+# Play audio using aplay or afplay (macOS) or other available players
+if command -v aplay >/dev/null 2>&1; then
+    # Linux with ALSA
+    nc localhost 28200 2>/dev/null | aplay -f S16_LE -r 44100 -c 2 --buffer-size=1024 --period-size=256
+elif command -v ffplay >/dev/null 2>&1; then
+    # Alternative with ffplay
+    mkfifo /tmp/sndcpy_pipe 2>/dev/null || true
+    nc localhost 28200 2>/dev/null > /tmp/sndcpy_pipe &
+    ffplay -f s16le -ar 44100 -ac 2 -nodisp -autoexit /tmp/sndcpy_pipe
+    rm /tmp/sndcpy_pipe 2>/dev/null || true
+elif command -v afplay >/dev/null 2>&1; then
+    # macOS
+    nc localhost 28200 2>/dev/null | afplay -
+else
+    print_error "No audio player found. Please install aplay (alsa-utils), ffplay (ffmpeg) or afplay (macOS)."
+    print "You can also manually connect to localhost:28200 to receive the audio stream."
+fi
+
+print_success "sndcpy finished"

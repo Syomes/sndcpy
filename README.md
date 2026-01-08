@@ -1,5 +1,5 @@
 # sndcpy
-> Personal use minimum demo, implementation comes from [sndcpy](https://github.com/rom1v/sndcpy).
+> Personal use minimum demo, implementation was inspired by [sndcpy](https://github.com/rom1v/sndcpy).
 
 ## Features
 - Real-time transmission of Android device audio to computer
