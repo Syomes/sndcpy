@@ -94,10 +94,11 @@ if %errorlevel%==0 (
 ) else (
     echo Installing sndcpy app...
     if not "%SERIAL%"=="" (
-        %ADB% -s %SERIAL% install -r "%APK_NAME%" || (
+        %ADB% -s %SERIAL% install -r "%APK_NAME%"
     ) else (
-        %ADB% install -r "%APK_NAME%" || (
+        %ADB% install -r "%APK_NAME%"
     )
+    if errorlevel 1 (
         echo ERROR: Failed to install %APK_NAME%
         pause
         exit /b 1
@@ -107,10 +108,11 @@ if %errorlevel%==0 (
 echo Granting audio projection permission...
 REM Grant the PROJECT_MEDIA permission to allow audio capture without popup
 if not "%SERIAL%"=="" (
-    %ADB% -s %SERIAL% shell appops set com.syome.sndcpy PROJECT_MEDIA allow || (
+    %ADB% -s %SERIAL% shell appops set com.syome.sndcpy PROJECT_MEDIA allow
 ) else (
-    %ADB% shell appops set com.syome.sndcpy PROJECT_MEDIA allow || (
+    %ADB% shell appops set com.syome.sndcpy PROJECT_MEDIA allow
 )
+if errorlevel 1 (
     echo WARNING: Could not grant PROJECT_MEDIA permission - this may cause a popup on newer Android versions
 )
 
@@ -182,14 +184,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM Try to find a media player
-where aplay >nul 2>&1
-if not errorlevel 1 (
-    echo Found aplay, starting audio forwarding...
-    netcat localhost 28200 2>nul | aplay -f S16_LE -r 44100 -c 2 --buffer-size=1024 --period-size=256
-    goto :end
-)
-
+REM Try to find a media player (Windows only: ffplay)
 where ffplay >nul 2>&1
 if not errorlevel 1 (
     echo Found ffplay, starting audio forwarding...
@@ -197,15 +192,8 @@ if not errorlevel 1 (
     goto :end
 )
 
-where omxplayer >nul 2>&1
-if not errorlevel 1 (
-    echo Found omxplayer, starting audio forwarding...
-    netcat localhost 28200 2>nul | omxplayer --pcm -o local --
-    goto :end
-)
-
 REM If no player found, show error
-echo ERROR: No audio player found. Please install aplay (alsa-utils), ffplay (ffmpeg) or omxplayer.
+echo ERROR: No audio player found. Please install ffplay (ffmpeg).
 echo You can also manually connect to localhost:28200 to receive the audio stream.
 goto :end
 
