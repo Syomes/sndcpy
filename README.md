@@ -27,7 +27,7 @@
 - ADB connected
 
 ## Usage
-1. Ensure `adb`, `nmap` are installed
+1. Ensure `adb`, `nmap`, `sox` are installed
 2. Install APK to Android device
 3. Run ADB port forwarding command on computer:
    ```bash
