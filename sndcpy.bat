@@ -3,8 +3,16 @@ setlocal enabledelayedexpansion
 
 REM sndcpy - Audio forwarding from Android to PC via ADB
 REM Enhanced version with automatic permission granting
+REM Enhanced with ANSI color output for ERROR/WARNING messages
 
-set ADB=%ADB:adb%=adb
+REM Colors
+for /F %%A in ('echo prompt $E ^| cmd') do set "ESC=%%A"
+
+set "RED=%ESC%[31m"
+set "YELLOW=%ESC%[33m"
+set "RESET=%ESC%[0m"
+
+set ADB=adb
 set SERIAL=
 set APK_NAME=sndcpy.apk
 set TAG=sndcpy-AudioForwardService
@@ -63,7 +71,7 @@ if /i "%~1"=="--" (
   call :parse_args %*
   goto :main
 )
-echo ERROR: Unknown option: %~1
+echo %RED%ERROR: Unknown option: %~1%RESET%
 exit /b 1
 
 :main
@@ -75,9 +83,9 @@ if not "%SERIAL%"=="" (
 )
 if errorlevel 1 (
     if not "%SERIAL%"=="" (
-        echo ERROR: Device %SERIAL% is not connected or not in device state
+        echo %RED%ERROR: Device %SERIAL% is not connected or not in device state%RESET%
     ) else (
-        echo ERROR: No device connected or not in device state
+        echo %RED%ERROR: No device connected or not in device state%RESET%
     )
     pause
     exit /b 1
@@ -99,7 +107,7 @@ if %errorlevel%==0 (
         %ADB% install -r "%APK_NAME%"
     )
     if errorlevel 1 (
-        echo ERROR: Failed to install %APK_NAME%
+        echo %RED%ERROR: Failed to install %APK_NAME%%RESET%
         pause
         exit /b 1
     )
@@ -113,7 +121,7 @@ if not "%SERIAL%"=="" (
     %ADB% shell appops set com.syome.sndcpy PROJECT_MEDIA allow
 )
 if errorlevel 1 (
-    echo WARNING: Could not grant PROJECT_MEDIA permission - this may cause a popup on newer Android versions
+    echo %YELLOW%WARNING: Could not grant PROJECT_MEDIA permission - this may cause a popup on newer Android versions%RESET%
 )
 
 echo Starting sndcpy app...
@@ -166,6 +174,8 @@ if not "%SERIAL%"=="" (
 
 if not errorlevel 1 (
     echo App Launched
+    echo Waiting 1 second for socket to be ready...
+    ping -n 2 127.0.0.1 >nul
     goto start_audio
 )
 
@@ -174,29 +184,28 @@ ping -n 2 127.0.0.1 >nul
 
 goto check_logcat_loop
 
-
 :start_audio
-REM Use netcat to receive audio and play with available players
-where netcat >nul 2>&1
+REM Use ncat to receive audio and play with available players
+where ncat >nul 2>&1
 if errorlevel 1 (
-    echo ERROR: netcat is not found. Please install netcat.
+    echo %RED%ERROR: ncat is not found. Please install nmap.%RESET%
     pause
     exit /b 1
 )
 
-REM Try to find a media player (Windows only: ffplay)
-where ffplay >nul 2>&1
+REM Try to find a media player
+where sox >nul 2>&1
 if not errorlevel 1 (
-    echo Found ffplay, starting audio forwarding...
-    netcat localhost 28200 2>nul | ffplay -f s16le -ar 44100 -ac 2 -nodisp -autoexit -
+    echo Found sox, starting audio forwarding...
+    ncat localhost 28200 | sox -t raw -r 44100 -e signed-integer -b 16 -c 2 - -t waveaudio default
     goto :end
 )
 
 REM If no player found, show error
-echo ERROR: No audio player found. Please install ffplay (ffmpeg).
+echo %RED%ERROR: No audio player found. Please install mpv.%RESET%
 echo You can also manually connect to localhost:28200 to receive the audio stream.
 goto :end
 
 :end
-echo SUCCESS: sndcpy finished
+echo sndcpy finished
 pause

@@ -133,21 +133,18 @@ sleep 1
 print "To stop, press Ctrl+C"
 print ""
 
-# Play audio using aplay or afplay (macOS) or other available players
-if command -v aplay >/dev/null 2>&1; then
-    # Linux with ALSA
-    nc localhost 28200 2>/dev/null | aplay -f S16_LE -r 44100 -c 2 --buffer-size=1024 --period-size=256
+# Play audio using SoX (play) for cross-platform support
+if command -v play >/dev/null 2>&1; then
+    # Use SoX play command (works on Linux, macOS, Windows)
+    nc localhost 28200 2>/dev/null | play -t raw -r 44100 -e signed -b 16 -c 2 -
 elif command -v ffplay >/dev/null 2>&1; then
     # Alternative with ffplay
     mkfifo /tmp/sndcpy_pipe 2>/dev/null || true
     nc localhost 28200 2>/dev/null > /tmp/sndcpy_pipe &
     ffplay -f s16le -ar 44100 -ac 2 -nodisp -autoexit /tmp/sndcpy_pipe
     rm /tmp/sndcpy_pipe 2>/dev/null || true
-elif command -v afplay >/dev/null 2>&1; then
-    # macOS
-    nc localhost 28200 2>/dev/null | afplay -
 else
-    print_error "No audio player found. Please install aplay (alsa-utils), ffplay (ffmpeg) or afplay (macOS)."
+    print_error "No audio player found. Please install SoX (play) or ffplay (ffmpeg)."
     print "You can also manually connect to localhost:28200 to receive the audio stream."
 fi
 

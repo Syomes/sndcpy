@@ -2,7 +2,7 @@
 > Minimum demo primarily adapt to my devices, implementation was inspired by [sndcpy](https://github.com/rom1v/sndcpy).
 
 ## Features
-- Real-time transmission(<100ms for me) of Android device audio to computer
+- Real-time transmission(<100ms, Windows is higher but <500ms) of Android device audio to computer
 - Capture system audio using MediaProjection API
 - Transmit audio data via local Socket
 - Foreground service ensures stable operation
@@ -27,15 +27,20 @@
 - ADB connected
 
 ## Usage
-1. Install APK to Android device
-2. Run ADB port forwarding command on computer:
+1. Ensure `adb`, `nmap` are installed
+2. Install APK to Android device
+3. Run ADB port forwarding command on computer:
    ```bash
    adb forward tcp:28200 localabstract:sndcpy
    ```
-3. Launch Android app and authorize screen recording permission
-4. Audio will be forwarded to computer via Socket, recommended command to play audio:
+4. Launch Android app and authorize screen recording permission
+5. Audio will be forwarded to computer via Socket, recommended command to play audio:
 ```bash
-nc localhost 28200 | aplay -f S16_LE -r 44100 -c 2 --buffer-size=1024 --period-size=256
+# GNU/Linux and MacOS
+ncat localhost 28200 | play -t raw -r 44100 -e signed -b 16 -c 2 -
+
+# Windows
+ncat localhost 28200 | sox -t raw -r 44100 -e signed-integer -b 16 -c 2 - -t waveaudio default
 ```
 
 ---
